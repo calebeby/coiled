@@ -64,28 +64,29 @@ const Animated = <El extends keyof JSX.IntrinsicElements>({
 
   // Whenever it rerenders set the target
   useLayoutEffect(() => {
-    elRef.current.style.transform = `translateX(0px)`
+    elRef.current.style.transform = `translate(0, 0)`
     const targetRect = elRef.current.getBoundingClientRect()
-    setTarget(targetRect.x)
+    setTarget(targetRect.x, 0)
+    setTarget(targetRect.y, 1)
   })
 
-  const setTarget = (target: number) => {
-    if (targetRef.current === target) return
+  const setTarget = (target: number, i: number) => {
+    if (targetRef.current[i] === target) return
     const now = performance.now()
-    const oldTarget = targetRef.current
+    const oldTarget = targetRef.current[i]
     let x0 = 0
     let v0 = 0
     if (oldTarget !== undefined) {
-      x0 = oldTarget + computePositionAtTime(now) - target
-      v0 = computeVelocityAtTime(now)
+      x0 = oldTarget + computePositionAtTime(now, i) - target
+      v0 = computeVelocityAtTime(now, i)
     }
-    c1Ref.current = x0
-    c2Ref.current = (v0 - alpha * x0) / beta
-    t0Ref.current = now
-    targetRef.current = target
+    c1Ref.current[i] = x0
+    c2Ref.current[i] = (v0 - alpha * x0) / beta
+    t0Ref.current[i] = now
+    targetRef.current[i] = target
   }
 
-  const b = 28
+  const b = 27.8
   const m = 1
   const k = 200
 
@@ -94,26 +95,24 @@ const Animated = <El extends keyof JSX.IntrinsicElements>({
 
   if (beta >= 0) throw new Error('spring is overdamped, try increasing k')
 
-  const t0Ref = useRef(0)
-  const c1Ref = useRef(0)
-  const c2Ref = useRef(0)
-  const targetRef = useRef<number>()
+  const t0Ref = useRef<number[]>([])
+  const c1Ref = useRef<number[]>([])
+  const c2Ref = useRef<number[]>([])
+  const targetRef = useRef<number[]>([])
 
-  const computePositionAtTime = (time: number) => {
-    // TODO: not divide by 1000?
-    const t = (time - t0Ref.current) / 1000
-    const c1 = c1Ref.current
-    const c2 = c2Ref.current
+  const computePositionAtTime = (time: number, i: number) => {
+    const t = (time - t0Ref.current[i]) / 1000
+    const c1 = c1Ref.current[i]
+    const c2 = c2Ref.current[i]
     return (
       Math.exp(alpha * t) * (c1 * Math.cos(beta * t) + c2 * Math.sin(beta * t))
     )
   }
 
-  const computeVelocityAtTime = (time: number) => {
-    // TODO: not divide by 1000?
-    const t = (time - t0Ref.current) / 1000
-    const c1 = c1Ref.current
-    const c2 = c2Ref.current
+  const computeVelocityAtTime = (time: number, i: number) => {
+    const t = (time - t0Ref.current[i]) / 1000
+    const c1 = c1Ref.current[i]
+    const c2 = c2Ref.current[i]
     return (
       Math.exp(alpha * t) *
       (Math.sin(beta * t) * (alpha * c2 - beta * c1) +
@@ -123,9 +122,11 @@ const Animated = <El extends keyof JSX.IntrinsicElements>({
 
   useEffect(() => {
     const animate: FrameRequestCallback = (time) => {
-      let x = computePositionAtTime(time)
+      let x = computePositionAtTime(time, 0)
+      let y = computePositionAtTime(time, 1)
       if (Math.abs(x) < 0.1) x = 0
-      elRef.current.style.transform = `translateX(${x}px)`
+      if (Math.abs(y) < 0.1) y = 0
+      elRef.current.style.transform = `translate(${x}px, ${y}px)`
 
       rafId = requestAnimationFrame(animate)
     }
