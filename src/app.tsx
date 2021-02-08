@@ -28,6 +28,7 @@ export const App = () => {
             el="div"
             key={item}
             class="square"
+            animators={[positionAnimator]}
             style={{
               background:
                 item === 1
@@ -47,16 +48,40 @@ export const App = () => {
   )
 }
 
+const positionAnimator: Animator<[number, number]> = {
+  measureTarget(el) {
+    el.style.transform = `translate(0, 0)`
+    const targetRect = el.getBoundingClientRect()
+    return [targetRect.x, targetRect.y]
+  },
+  applyFrame(el, [x, y]) {
+    if (Math.abs(x) < 0.1) x = 0
+    if (Math.abs(y) < 0.1) y = 0
+    el.style.transform = `translate(${x}px, ${y}px)`
+  },
+  numAxes: 2,
+}
+
+interface Animator<AnimateAxes extends number[]> {
+  measureTarget(element: HTMLElement): AnimateAxes
+  applyFrame(element: HTMLElement, axes: AnimateAxes): void
+  numAxes: AnimateAxes['length']
+}
+
 type ElementProps<El extends keyof JSX.IntrinsicElements> = Omit<
   JSX.IntrinsicElements[El],
   'ref' | 'as' | 'key'
 >
 type AnimatedProps<
   El extends keyof JSX.IntrinsicElements
-> = ElementProps<El> & { el: El }
+> = ElementProps<El> & {
+  el: El
+  animators: Animator<any>[]
+}
 
 const Animated = <El extends keyof JSX.IntrinsicElements>({
   el,
+  animators,
   ...props
 }: AnimatedProps<El>) => {
   const elRef = useRef<HTMLElement>()
@@ -64,10 +89,13 @@ const Animated = <El extends keyof JSX.IntrinsicElements>({
 
   // Whenever it rerenders set the target
   useLayoutEffect(() => {
-    elRef.current.style.transform = `translate(0, 0)`
-    const targetRect = elRef.current.getBoundingClientRect()
-    setTarget(targetRect.x, 0)
-    setTarget(targetRect.y, 1)
+    let i = 0
+    for (const animator of animators) {
+      const targets = animator.measureTarget(elRef.current)
+      for (const target of targets) {
+        setTarget(target, i++)
+      }
+    }
   })
 
   const setTarget = (target: number, i: number) => {
@@ -122,11 +150,14 @@ const Animated = <El extends keyof JSX.IntrinsicElements>({
 
   useEffect(() => {
     const animate: FrameRequestCallback = (time) => {
-      let x = computePositionAtTime(time, 0)
-      let y = computePositionAtTime(time, 1)
-      if (Math.abs(x) < 0.1) x = 0
-      if (Math.abs(y) < 0.1) y = 0
-      elRef.current.style.transform = `translate(${x}px, ${y}px)`
+      let i = 0
+      for (const animator of animators) {
+        const tweened = []
+        while (tweened.length < animator.numAxes) {
+          tweened.push(computePositionAtTime(time, i++))
+        }
+        animator.applyFrame(elRef.current, tweened)
+      }
 
       rafId = requestAnimationFrame(animate)
     }
