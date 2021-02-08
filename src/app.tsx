@@ -62,6 +62,7 @@ const Animated = <El extends keyof JSX.IntrinsicElements>({
   const elRef = useRef<HTMLElement>()
   const El = el as any
 
+  // Whenever it rerenders set the target
   useLayoutEffect(() => {
     elRef.current.style.transform = `translateX(0px)`
     const targetRect = elRef.current.getBoundingClientRect()
@@ -69,13 +70,15 @@ const Animated = <El extends keyof JSX.IntrinsicElements>({
   })
 
   const setTarget = (target: number) => {
-    const oldTarget = targetRef.current
+    if (targetRef.current === target) return
     const now = performance.now()
-    if (oldTarget === target) return
-    const x0 = oldTarget + computePositionAtTime(now) - target
-    const v0 = computeVelocityAtTime(now)
-    // const v0 = 0
-    // console.log(String(props.children), computeVelocityAtTime(now))
+    const oldTarget = targetRef.current
+    let x0 = 0
+    let v0 = 0
+    if (oldTarget !== undefined) {
+      x0 = oldTarget + computePositionAtTime(now) - target
+      v0 = computeVelocityAtTime(now)
+    }
     c1Ref.current = x0
     c2Ref.current = (v0 - alpha * x0) / beta
     t0Ref.current = now
@@ -94,7 +97,7 @@ const Animated = <El extends keyof JSX.IntrinsicElements>({
   const t0Ref = useRef(0)
   const c1Ref = useRef(0)
   const c2Ref = useRef(0)
-  const targetRef = useRef(0)
+  const targetRef = useRef<number>()
 
   const computePositionAtTime = (time: number) => {
     // TODO: not divide by 1000?
