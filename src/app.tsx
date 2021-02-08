@@ -1,97 +1,134 @@
-import {
-  h,
-  Fragment,
-  JSX,
-  Ref,
-  createContext,
-  Component,
-  createRef,
-} from 'preact'
-import {
-  useContext,
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-} from 'preact/hooks'
+import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks'
 
 export const App = () => {
-  const [openItem, setOpenItem] = useState<string | null>(null)
-  const [items, setItems] = useState(['first', 'second', 'third'])
+  const [items, setItems] = useState([1, 2, 3, 4])
+  // const [items, setItems] = useState([1, 2])
+
+  useEffect(() => {
+    const listener = (event: KeyboardEvent) => {
+      const { key } = event
+      if (key === ' ') {
+        // setItems((i) => i.slice().reverse())
+        setItems((i) => {
+          i.unshift(i.pop()!)
+          return i.slice()
+        })
+      }
+    }
+
+    document.addEventListener('keydown', listener)
+    return () => document.removeEventListener('keydown', listener)
+  }, [])
 
   return (
-    <AnimateSharedLayout>
-      <h1>Coiled</h1>
-      {openItem === null ? (
-        <>
-          <ul>
-            {items.map((item) => {
-              return (
-                <Item key={item} name={item} onOpen={() => setOpenItem(item)} />
-              )
-            })}
-          </ul>
-          <button
-            onClick={() => setItems((items) => [...items.slice(1), items[0]])}
+    <>
+      {items.map((item) => {
+        return (
+          <Animated
+            el="div"
+            key={item}
+            class="square"
+            style={{
+              background:
+                item === 1
+                  ? 'red'
+                  : item === 2
+                  ? 'green'
+                  : item === 3
+                  ? 'purple'
+                  : 'blue',
+            }}
           >
-            Shuffle
-          </button>
-        </>
-      ) : (
-        <div class="item">
-          <h1>{openItem}</h1>
-          <p>Random contents</p>
-          <button onClick={() => setOpenItem(null)}>Close</button>
-        </div>
-      )}
-    </AnimateSharedLayout>
+            {item}
+          </Animated>
+        )
+      })}
+    </>
   )
 }
 
-const Item = ({ name, onOpen }: { name: string; onOpen: () => void }) => {
-  return (
-    <Animate layoutId={name}>
-      {(ref) => (
-        <li ref={ref}>
-          <button onClick={onOpen}>{name}</button>
-        </li>
-      )}
-    </Animate>
-  )
-}
+type ElementProps<El extends keyof JSX.IntrinsicElements> = Omit<
+  JSX.IntrinsicElements[El],
+  'ref' | 'as' | 'key'
+>
+type AnimatedProps<
+  El extends keyof JSX.IntrinsicElements
+> = ElementProps<El> & { el: El }
 
-const SharedLayoutContext = createContext(new Map<string, null>())
+const Animated = <El extends keyof JSX.IntrinsicElements>({
+  el,
+  ...props
+}: AnimatedProps<El>) => {
+  const elRef = useRef<HTMLElement>()
+  const El = el as any
 
-const AnimateSharedLayout = ({
-  children,
-}: {
-  children: JSX.Element[] | JSX.Element
-}) => {
-  const snapshots = new Map<string, null>()
-  return (
-    <SharedLayoutContext.Provider value={snapshots}>
-      {children}
-    </SharedLayoutContext.Provider>
-  )
-}
+  useLayoutEffect(() => {
+    elRef.current.style.transform = `translateX(0px)`
+    const targetRect = elRef.current.getBoundingClientRect()
+    setTarget(targetRect.x)
+  })
 
-interface MeasureProps {
-  children: (ref: Ref<HTMLElement>) => JSX.Element
-  layoutId: string
-}
-
-class Measure extends Component<MeasureProps> {
-  ref = createRef<HTMLElement>()
-
-  getSnapshotBeforeUpdate() {
-    console.log('getSnapshotBeforeUpdate')
+  const setTarget = (target: number) => {
+    const oldTarget = targetRef.current
+    const now = performance.now()
+    if (oldTarget === target) return
+    const x0 = oldTarget + computePositionAtTime(now) - target
+    const v0 = computeVelocityAtTime(now)
+    // const v0 = 0
+    // console.log(String(props.children), computeVelocityAtTime(now))
+    c1Ref.current = x0
+    c2Ref.current = (v0 - alpha * x0) / beta
+    t0Ref.current = now
+    targetRef.current = target
   }
 
-  render({ children }: MeasureProps) {
-    return children(this.ref)
-  }
-}
+  const b = 28
+  const m = 1
+  const k = 200
 
-const Animate = () => {
-  return <Measure>{children(this.ref)}</Measure>
+  const alpha = -b / (2 * m)
+  const beta = (b ** 2 - 4 * m * k) / (2 * m)
+
+  if (beta >= 0) throw new Error('spring is overdamped, try increasing k')
+
+  const t0Ref = useRef(0)
+  const c1Ref = useRef(0)
+  const c2Ref = useRef(0)
+  const targetRef = useRef(0)
+
+  const computePositionAtTime = (time: number) => {
+    // TODO: not divide by 1000?
+    const t = (time - t0Ref.current) / 1000
+    const c1 = c1Ref.current
+    const c2 = c2Ref.current
+    return (
+      Math.exp(alpha * t) * (c1 * Math.cos(beta * t) + c2 * Math.sin(beta * t))
+    )
+  }
+
+  const computeVelocityAtTime = (time: number) => {
+    // TODO: not divide by 1000?
+    const t = (time - t0Ref.current) / 1000
+    const c1 = c1Ref.current
+    const c2 = c2Ref.current
+    return (
+      Math.exp(alpha * t) *
+      (Math.sin(beta * t) * (alpha * c2 - beta * c1) +
+        Math.cos(beta * t) * (alpha * c1 + beta * c2))
+    )
+  }
+
+  useEffect(() => {
+    const animate: FrameRequestCallback = (time) => {
+      let x = computePositionAtTime(time)
+      if (Math.abs(x) < 0.1) x = 0
+      elRef.current.style.transform = `translateX(${x}px)`
+
+      rafId = requestAnimationFrame(animate)
+    }
+    let rafId = requestAnimationFrame(animate)
+    return () => cancelAnimationFrame(rafId)
+  }, [])
+
+  return <El {...props} ref={elRef} />
 }
