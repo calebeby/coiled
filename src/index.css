@@ -2,8 +2,15 @@ body {
   margin: 0;
 }
 
-#app {
+* {
+  box-sizing: border-box;
+}
+
+.example {
   min-height: 100vh;
+}
+
+.position-example {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
   grid-auto-flow: row;
@@ -11,7 +18,7 @@ body {
   align-items: center;
 }
 
-.square {
+.position-example .square {
   width: 4rem;
   height: 4rem;
   color: white;
@@ -22,4 +29,17 @@ body {
   font-weight: bold;
   font-size: 1.2rem;
   border-radius: 0.5rem;
+}
+
+.width-example {
+  background: lightblue;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-rows: 1fr 1fr 1fr;
+  grid-gap: 50px;
+  padding: 50px;
+}
+
+.width-example div {
+  background: green;
 }
