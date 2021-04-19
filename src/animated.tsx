@@ -55,9 +55,13 @@ export const Animated = <El extends keyof JSX.IntrinsicElements>({
     targetRef.current[i] = target
   }
 
-  const b = 27.8
-  const m = 1
-  const k = 200
+  // const b = 27.8
+  // const m = 1
+  // const k = 200
+
+  const b = 0.0001
+  const m = 0.00003
+  const k = 0.99
 
   const alpha = -b / (2 * m)
   const beta = (b ** 2 - 4 * m * k) / (2 * m)
