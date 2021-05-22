@@ -1,29 +1,83 @@
-import { Animator } from './animated'
+import {
+  Animator,
+  computeODEParameters,
+  computePositionAtTime,
+  ODEParameters,
+} from './animated'
 
-// TODO: getBoundingClientRect() doesn't handle scrolling well
+interface SizeAnimatorState {
+  width: ODEParameters
+  height: ODEParameters
+}
 
-export const positionAndSizeAnimator: Animator<
-  [x: number, y: number, scaleX: number, scaleY: number]
-> = {
-  measureTarget(el, [, , oldWidth, oldHeight]) {
-    const currentRect = el.getBoundingClientRect()
-    el.style.transform = ''
-    const targetRect = el.getBoundingClientRect()
-    const widthDiff = currentRect.width - targetRect.width
-    console.log('width diff', widthDiff)
-    return [targetRect.x, targetRect.y, widthDiff, 0]
+export const sizeAnimator: Animator<SizeAnimatorState> = {
+  getInitialState(now, alpha, beta) {
+    return {
+      width: [now, undefined, alpha, beta, 0, 0],
+      height: [now, undefined, alpha, beta, 0, 0],
+    }
   },
-  applyFrame(el, [x, y, widthDiff, heightPx]) {
-    if (Math.abs(x) < 0.1) x = 0
-    if (Math.abs(y) < 0.1) y = 0
-    const currentRect = el.getBoundingClientRect()
-    // let width = currentRect.width / widthPx
-    // if (Math.abs(width) < 0.1) width = 0
-    // const width = 1 + widthDiff / currentRect.width
-    const width = 1 + widthDiff / el.clientWidth
-    // const width = 1
-    // console.log(`translate(${x}px, ${y}px) scale(${scaleX}, ${scaleY})`)
-    el.style.transform = `translate(${x}px, ${y}px) scale(${width}, ${1})`
+  onTargetChange(el, state, now) {
+    console.log('onTargetChange')
+    el.style.setProperty('--scale-x', '')
+    el.style.setProperty('--scale-y', '')
+    const rect = el.getBoundingClientRect()
+    const targetWidth = rect.width
+    const targetHeight = rect.height
+    state.width = computeODEParameters(targetWidth, state.width)
+    state.height = computeODEParameters(targetHeight, state.height)
   },
-  numAxes: 4,
+  applyFrame(el, state, now) {
+    const targetWidth = state.width[1]
+    const targetHeight = state.height[1]
+    const currentWidth = computePositionAtTime(now, state.width) + targetWidth
+    const currentHeight =
+      computePositionAtTime(now, state.height) + targetHeight
+
+    // el.style.transform = `
+    //   scale(${currentWidth / targetWidth},${currentHeight / targetHeight})`
+
+    el.style.setProperty('--scale-x', String(currentWidth / targetWidth))
+    el.style.setProperty('--scale-y', String(currentHeight / targetHeight))
+
+    for (const child of el.children) {
+      if (child instanceof HTMLElement) {
+        child.style.transform = `scale(${targetWidth / currentWidth},${
+          targetHeight / currentHeight
+        })`
+        child.style.transformOrigin = `top left`
+      }
+    }
+  },
+}
+
+interface PositionAnimatorState {
+  x: ODEParameters
+  y: ODEParameters
+}
+
+export const positionAnimator: Animator<PositionAnimatorState> = {
+  getInitialState(now, alpha, beta) {
+    return {
+      x: [now, undefined, alpha, beta, 0, 0],
+      y: [now, undefined, alpha, beta, 0, 0],
+    }
+  },
+  onTargetChange(el, state, now) {
+    console.log('onTargetChange')
+    el.style.setProperty('--translate-x', '')
+    el.style.setProperty('--translate-y', '')
+    const rect = el.getBoundingClientRect()
+    const targetX = rect.x + rect.width / 2
+    const targetY = rect.y + rect.height / 2
+    state.x = computeODEParameters(targetX, state.x)
+    state.y = computeODEParameters(targetY, state.y)
+  },
+  applyFrame(el, state, now) {
+    const currentX = computePositionAtTime(now, state.x)
+    const currentY = computePositionAtTime(now, state.y)
+
+    el.style.setProperty('--translate-x', `${currentX}px`)
+    el.style.setProperty('--translate-y', `${currentY}px`)
+  },
 }

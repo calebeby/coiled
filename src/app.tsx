@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'preact/hooks'
 import { Animated } from './animated'
-import { positionAndSizeAnimator } from './position-and-size-animator'
-import { positionAnimator } from './position-animator'
+import { positionAnimator, sizeAnimator } from './position-and-size-animator'
 
 const useSpacebar = (cb: () => void) => {
   useEffect(() => {
@@ -69,18 +68,32 @@ const WidthExample = () => {
     <div class="example width-example">
       <Animated
         el="div"
-        animators={[positionAndSizeAnimator]}
+        animators={[positionAnimator, sizeAnimator]}
         style={
-          position ? {} : { gridColumn: '2 / span 2', gridRow: '2 / span 2' }
+          position
+            ? // ? { gridColumn: '2 / span 1', gridRow: '2 / span 1' }
+              { gridColumn: '1 / span 1', gridRow: '1 / span 1' }
+            : { gridColumn: '2 / span 2', gridRow: '2 / span 2' }
         }
-      />
+      >
+        <h1>This is some text</h1>
+
+        <p>
+          We choose to go to the moon. We choose to go to the moon in this
+          decade and do the other things, not because they are easy, but because
+          they are hard, because that goal will serve to organize and measure
+          the best of our energies and skills, because that challenge is one
+          that we are willing to accept, one we are unwilling to postpone, and
+          one which we intend to win, and the others, too.
+        </p>
+      </Animated>
     </div>
   )
 }
 
 export const App = () => {
-  return [
+  return ([
     <WidthExample />,
     // <PositionExample />,
-  ]
+  ] as any) as JSX.Element
 }

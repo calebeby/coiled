@@ -6,6 +6,12 @@ body {
   box-sizing: border-box;
 }
 
+h1,
+h2,
+h3 {
+  margin: 0;
+}
+
 .example {
   min-height: 100vh;
 }
@@ -42,4 +48,8 @@ body {
 
 .width-example div {
   background: green;
+  /* transform-origin: top left; */
+  padding: 20px;
+  color: white;
+  overflow: hidden;
 }

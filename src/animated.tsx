@@ -1,9 +1,9 @@
 import { useEffect, useLayoutEffect, useRef } from 'preact/hooks'
 
-export interface Animator<AnimateAxes extends number[]> {
-  measureTarget(element: HTMLElement, oldAxes: AnimateAxes): AnimateAxes
-  applyFrame(element: HTMLElement, axes: AnimateAxes): void
-  numAxes: AnimateAxes['length']
+export interface Animator<State> {
+  getInitialState(now: number, alpha: number, beta: number): State
+  onTargetChange(el: HTMLElement, state: State, now: number): void
+  applyFrame(el: HTMLElement, state: State, now: number): void
 }
 type ElementProps<El extends keyof JSX.IntrinsicElements> = Omit<
   JSX.IntrinsicElements[El],
@@ -16,6 +16,66 @@ type AnimatedProps<
   animators: Animator<any>[]
 }
 
+export type ODEParameters = [
+  /** Starting time */
+  t0: number,
+  /** Target value */
+  target: number | undefined,
+  /** Equation Parameter: Alpha */
+  alpha: number,
+  /** Equation Parameter: Beta */
+  beta: number,
+  /** Equation Parameter: c1 */
+  c1: number,
+  /** Equation Parameter: c2 */
+  c2: number,
+]
+
+/** To be called when the target changes (or may have changed) */
+export const computeODEParameters = (
+  target: number,
+  oldParams: ODEParameters,
+): ODEParameters => {
+  const now = performance.now()
+  let x0 = 0
+  let v0 = 0
+  const [, oldTarget, alpha, beta] = oldParams
+  if (oldTarget !== undefined) {
+    x0 = oldTarget + computePositionAtTime(now, oldParams) - target
+    v0 = computeVelocityAtTime(now, oldParams)
+  }
+  return [
+    now, // t0
+    target,
+    alpha,
+    beta,
+    x0, // c1
+    (v0 - alpha * x0) / beta, // c2
+  ]
+}
+
+export const computePositionAtTime = (
+  time: number,
+  [t0, _target, alpha, beta, c1, c2]: ODEParameters,
+) => {
+  const t = (time - t0) / 1000
+  return (
+    Math.exp(alpha * t) * (c1 * Math.cos(beta * t) + c2 * Math.sin(beta * t))
+  )
+}
+
+export const computeVelocityAtTime = (
+  time: number,
+  [t0, _target, alpha, beta, c1, c2]: ODEParameters,
+) => {
+  const t = (time - t0) / 1000
+  return (
+    Math.exp(alpha * t) *
+    (Math.sin(beta * t) * (alpha * c2 - beta * c1) +
+      Math.cos(beta * t) * (alpha * c1 + beta * c2))
+  )
+}
+
 export const Animated = <El extends keyof JSX.IntrinsicElements>({
   el,
   animators,
@@ -23,85 +83,50 @@ export const Animated = <El extends keyof JSX.IntrinsicElements>({
 }: AnimatedProps<El>) => {
   const elRef = useRef<HTMLElement>()
   const El = el as any
+  const animatorStates = useRef<any[]>(new Array(animators.length)).current
 
-  // Whenever it rerenders set the target
-  useLayoutEffect(() => {
-    let i = 0
-    for (const animator of animators) {
-      const oldTargets = []
-      for (let j = i; j < i + animator.numAxes; j++) {
-        oldTargets.push(targetRef.current[j])
-      }
-      const targets = animator.measureTarget(elRef.current, oldTargets)
-      for (const target of targets) {
-        setTarget(target, i++)
-      }
-    }
-  })
+  const b = 27.8
+  const m = 1
+  const k = 200
 
-  const setTarget = (target: number, i: number) => {
-    if (targetRef.current[i] === target) return
-    const now = performance.now()
-    const oldTarget = targetRef.current[i]
-    let x0 = 0
-    let v0 = 0
-    if (oldTarget !== undefined) {
-      x0 = oldTarget + computePositionAtTime(now, i) - target
-      v0 = computeVelocityAtTime(now, i)
-    }
-    c1Ref.current[i] = x0
-    c2Ref.current[i] = (v0 - alpha * x0) / beta
-    t0Ref.current[i] = now
-    targetRef.current[i] = target
-  }
-
-  // const b = 27.8
-  // const m = 1
-  // const k = 200
-
-  const b = 0.0001
-  const m = 0.00003
-  const k = 0.99
+  // const b = 0.0001
+  // const m = 0.00003
+  // const k = 0.99
 
   const alpha = -b / (2 * m)
   const beta = (b ** 2 - 4 * m * k) / (2 * m)
 
   if (beta >= 0) throw new Error('spring is overdamped, try increasing k')
 
-  const t0Ref = useRef<number[]>([])
-  const c1Ref = useRef<number[]>([])
-  const c2Ref = useRef<number[]>([])
-  const targetRef = useRef<number[]>([])
+  // Whenever it rerenders set the target
+  useLayoutEffect(() => {
+    let i = 0,
+      animator,
+      now = performance.now()
+    while ((animator = animators[i])) {
+      if (animatorStates[i] === undefined)
+        animatorStates[i] = animator.getInitialState(now, alpha, beta)
+      animator.onTargetChange(elRef.current, animatorStates[i], now)
+      i++
+    }
+  })
 
-  const computePositionAtTime = (time: number, i: number) => {
-    const t = (time - t0Ref.current[i]) / 1000
-    const c1 = c1Ref.current[i]
-    const c2 = c2Ref.current[i]
-    return (
-      Math.exp(alpha * t) * (c1 * Math.cos(beta * t) + c2 * Math.sin(beta * t))
-    )
-  }
-
-  const computeVelocityAtTime = (time: number, i: number) => {
-    const t = (time - t0Ref.current[i]) / 1000
-    const c1 = c1Ref.current[i]
-    const c2 = c2Ref.current[i]
-    return (
-      Math.exp(alpha * t) *
-      (Math.sin(beta * t) * (alpha * c2 - beta * c1) +
-        Math.cos(beta * t) * (alpha * c1 + beta * c2))
-    )
-  }
+  useLayoutEffect(() => {
+    elRef.current.style.transform = `translate(var(--translate-x), var(--translate-y)) scale(var(--scale-x), var(--scale-y))`
+    elRef.current.style.setProperty('--translate-x', '0')
+    elRef.current.style.setProperty('--translate-y', '0')
+    elRef.current.style.setProperty('--scale-x', '1')
+    elRef.current.style.setProperty('--scale-y', '1')
+  }, [])
 
   useEffect(() => {
     const animate: FrameRequestCallback = (time) => {
-      let i = 0
-      for (const animator of animators) {
-        const tweened = []
-        while (tweened.length < animator.numAxes) {
-          tweened.push(computePositionAtTime(time, i++))
-        }
-        animator.applyFrame(elRef.current, tweened)
+      let i = 0,
+        animator,
+        now = performance.now()
+      while ((animator = animators[i])) {
+        animator.applyFrame(elRef.current, animatorStates[i], now)
+        i++
       }
 
       rafId = requestAnimationFrame(animate)
