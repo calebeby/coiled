@@ -71,8 +71,7 @@ const WidthExample = () => {
         animators={[positionAnimator, sizeAnimator]}
         style={
           position
-            ? // ? { gridColumn: '2 / span 1', gridRow: '2 / span 1' }
-              { gridColumn: '1 / span 1', gridRow: '1 / span 1' }
+            ? { gridColumn: '1 / span 1', gridRow: '1 / span 1' }
             : { gridColumn: '2 / span 2', gridRow: '2 / span 2' }
         }
       >

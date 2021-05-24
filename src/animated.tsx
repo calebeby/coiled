@@ -2,7 +2,8 @@ import { useEffect, useLayoutEffect, useRef } from 'preact/hooks'
 
 export interface Animator<State> {
   getInitialState(now: number, alpha: number, beta: number): State
-  onTargetChange(el: HTMLElement, state: State, now: number): void
+  onTargetChange(el: HTMLElement, state: State): void
+  isDone(now: number, state: State): boolean
   applyFrame(el: HTMLElement, state: State, now: number): void
 }
 type ElementProps<El extends keyof JSX.IntrinsicElements> = Omit<
@@ -29,7 +30,15 @@ export type ODEParameters = [
   c1: number,
   /** Equation Parameter: c2 */
   c2: number,
+  /** Time after which oscillation stops */
+  endTime: number,
 ]
+
+/**
+ * After the oscillations decrease to below this threshold,
+ * stop the oscillations entirely. Units are the same as the positional units (usualy px)
+ */
+const oscillationEndThreshold = 1
 
 /** To be called when the target changes (or may have changed) */
 export const computeODEParameters = (
@@ -44,13 +53,28 @@ export const computeODEParameters = (
     x0 = oldTarget + computePositionAtTime(now, oldParams) - target
     v0 = computeVelocityAtTime(now, oldParams)
   }
+  const c1 = x0
+  const c2 = (v0 - alpha * x0) / beta
+
+  const endTime =
+    c1 === 0
+      ? 0
+      : (1000 *
+          Math.log(
+            Math.abs(
+              oscillationEndThreshold / (c1 * Math.sqrt(c2 ** 2 / c1 ** 2 + 1)),
+            ),
+          )) /
+          alpha +
+        now
   return [
     now, // t0
     target,
     alpha,
     beta,
-    x0, // c1
-    (v0 - alpha * x0) / beta, // c2
+    c1,
+    c2,
+    endTime,
   ]
 }
 
@@ -106,7 +130,7 @@ export const Animated = <El extends keyof JSX.IntrinsicElements>({
     while ((animator = animators[i])) {
       if (animatorStates[i] === undefined)
         animatorStates[i] = animator.getInitialState(now, alpha, beta)
-      animator.onTargetChange(elRef.current, animatorStates[i], now)
+      animator.onTargetChange(elRef.current, animatorStates[i])
       i++
     }
   })
@@ -120,12 +144,14 @@ export const Animated = <El extends keyof JSX.IntrinsicElements>({
   }, [])
 
   useEffect(() => {
-    const animate: FrameRequestCallback = (time) => {
+    const animate: FrameRequestCallback = () => {
       let i = 0,
         animator,
         now = performance.now()
       while ((animator = animators[i])) {
-        animator.applyFrame(elRef.current, animatorStates[i], now)
+        const state = animatorStates[i]
+        if (!animator.isDone(now, state))
+          animator.applyFrame(elRef.current, state, now)
         i++
       }
 

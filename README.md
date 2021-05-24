@@ -18,3 +18,9 @@ c2 = (v0 - alpha c1) / beta
 
 x(t) = e^(alpha t) (c1 cos(beta t) + c2 sin(beta t))
 x'(t) = e^(alpha t) (sin(beta t) (alpha c2 - beta c1) + cos(beta t) (alpha c1 + beta c2))
+
+To find at what t do the oscillations decrease to below a threshold s:
+
+(the -s should be +s if c1 is positive)
+
+t = ln(-s/(c1 sqrt(c2^2 / c1^2 + 1))) / alpha

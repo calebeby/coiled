@@ -13,12 +13,11 @@ interface SizeAnimatorState {
 export const sizeAnimator: Animator<SizeAnimatorState> = {
   getInitialState(now, alpha, beta) {
     return {
-      width: [now, undefined, alpha, beta, 0, 0],
-      height: [now, undefined, alpha, beta, 0, 0],
+      width: [now, undefined, alpha, beta, 0, 0, 0],
+      height: [now, undefined, alpha, beta, 0, 0, 0],
     }
   },
-  onTargetChange(el, state, now) {
-    console.log('onTargetChange')
+  onTargetChange(el, state) {
     el.style.setProperty('--scale-x', '')
     el.style.setProperty('--scale-y', '')
     const rect = el.getBoundingClientRect()
@@ -27,9 +26,12 @@ export const sizeAnimator: Animator<SizeAnimatorState> = {
     state.width = computeODEParameters(targetWidth, state.width)
     state.height = computeODEParameters(targetHeight, state.height)
   },
+  isDone(now, state) {
+    return now > state.height[6] && now > state.width[6]
+  },
   applyFrame(el, state, now) {
-    const targetWidth = state.width[1]
-    const targetHeight = state.height[1]
+    const targetWidth = state.width[1]!
+    const targetHeight = state.height[1]!
     const currentWidth = computePositionAtTime(now, state.width) + targetWidth
     const currentHeight =
       computePositionAtTime(now, state.height) + targetHeight
@@ -59,12 +61,11 @@ interface PositionAnimatorState {
 export const positionAnimator: Animator<PositionAnimatorState> = {
   getInitialState(now, alpha, beta) {
     return {
-      x: [now, undefined, alpha, beta, 0, 0],
-      y: [now, undefined, alpha, beta, 0, 0],
+      x: [now, undefined, alpha, beta, 0, 0, 0],
+      y: [now, undefined, alpha, beta, 0, 0, 0],
     }
   },
-  onTargetChange(el, state, now) {
-    console.log('onTargetChange')
+  onTargetChange(el, state) {
     el.style.setProperty('--translate-x', '')
     el.style.setProperty('--translate-y', '')
     const rect = el.getBoundingClientRect()
@@ -72,6 +73,9 @@ export const positionAnimator: Animator<PositionAnimatorState> = {
     const targetY = rect.y + rect.height / 2
     state.x = computeODEParameters(targetX, state.x)
     state.y = computeODEParameters(targetY, state.y)
+  },
+  isDone(now, state) {
+    return now > state.x[6] && now > state.y[6]
   },
   applyFrame(el, state, now) {
     const currentX = computePositionAtTime(now, state.x)
