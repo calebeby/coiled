@@ -46,6 +46,7 @@ h3 {
   grid-template-rows: 1fr 1fr 1fr;
   grid-gap: 50px;
   padding: 50px;
+  height: 100vh;
 }
 
 .width-example div {

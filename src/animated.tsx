@@ -38,7 +38,7 @@ export type ODEParameters = [
  * After the oscillations decrease to below this threshold,
  * stop the oscillations entirely. Units are the same as the positional units (usualy px)
  */
-const oscillationEndThreshold = 1
+const oscillationEndThreshold = 0.1
 
 /** To be called when the target changes (or may have changed) */
 export const computeODEParameters = (

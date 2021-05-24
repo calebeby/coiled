@@ -56,6 +56,8 @@ export const sizeAnimator: Animator<SizeAnimatorState> = {
 interface PositionAnimatorState {
   x: ODEParameters
   y: ODEParameters
+  parentX: number
+  parentY: number
 }
 
 export const positionAnimator: Animator<PositionAnimatorState> = {
@@ -63,14 +65,27 @@ export const positionAnimator: Animator<PositionAnimatorState> = {
     return {
       x: [now, undefined, alpha, beta, 0, 0, 0],
       y: [now, undefined, alpha, beta, 0, 0, 0],
+      parentX: 0,
+      parentY: 0,
     }
   },
   onTargetChange(el, state) {
     el.style.setProperty('--translate-x', '')
     el.style.setProperty('--translate-y', '')
+    const parentRect = el.parentElement!.getBoundingClientRect()
+    // Using the parent's bounding box
+    // so that if you scroll, the scroll offset is handled correctly
+    // This is a little naive, it probably doesn't work for:
+    // - Nested scrolling containers
+    // - Animations which change which parent an element has
+    // - Nested animated elements
+    const parentX = parentRect.x
+    const parentY = parentRect.y
     const rect = el.getBoundingClientRect()
-    const targetX = rect.x + rect.width / 2
-    const targetY = rect.y + rect.height / 2
+    const targetX = rect.x + rect.width / 2 - parentX
+    const targetY = rect.y + rect.height / 2 - parentY
+    state.parentX = parentX
+    state.parentY = parentY
     state.x = computeODEParameters(targetX, state.x)
     state.y = computeODEParameters(targetY, state.y)
   },
