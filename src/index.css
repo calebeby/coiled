@@ -25,6 +25,8 @@ h3 {
 }
 
 .position-example .square {
+  background: var(--color);
+  box-shadow: 0 0 60px var(--color);
   width: 4rem;
   height: 4rem;
   color: white;
@@ -33,8 +35,8 @@ h3 {
   align-items: center;
   font-family: sans-serif;
   font-weight: bold;
-  font-size: 1.2rem;
-  border-radius: 0.5rem;
+  font-size: 1.7rem;
+  border-radius: 0.8rem;
 }
 
 .width-example {

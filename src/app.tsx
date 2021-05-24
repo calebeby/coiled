@@ -18,8 +18,8 @@ const useSpacebar = (cb: () => void) => {
 }
 
 const PositionExample = () => {
-  // const [items, setItems] = useState([1, 2, 3, 4])
-  const [items, setItems] = useState([1, 2])
+  const [items, setItems] = useState([1, 2, 3, 4])
+  // const [items, setItems] = useState([1, 2])
 
   useSpacebar(() => {
     // setItems((i) => i.slice().reverse())
@@ -39,7 +39,7 @@ const PositionExample = () => {
             class="square"
             animators={[positionAnimator]}
             style={{
-              background:
+              '--color':
                 item === 1
                   ? 'red'
                   : item === 2
@@ -91,8 +91,5 @@ const WidthExample = () => {
 }
 
 export const App = () => {
-  return ([
-    <WidthExample />,
-    // <PositionExample />,
-  ] as any) as JSX.Element
+  return ([<WidthExample />, <PositionExample />] as any) as JSX.Element
 }
