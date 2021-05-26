@@ -164,6 +164,7 @@ export const Animated = <El extends keyof JSX.IntrinsicElements>({
       if (animatorStates[i] === undefined)
         animatorStates[i] = animator.getInitialState(now, alpha, beta)
       animator.onTargetChange(elRef.current, animatorStates[i])
+      animator.applyFrame(elRef.current, animatorStates[i], now)
       i++
     }
   })
