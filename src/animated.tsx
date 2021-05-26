@@ -170,6 +170,11 @@ export const Animated = <El extends keyof JSX.IntrinsicElements>({
 
   useLayoutEffect(() => {
     elRef.current.style.transform = `translate(var(--translate-x, 0), var(--translate-y, 0)) scale(var(--scale-x, 1), var(--scale-y, 1))`
+
+    // TODO: see if these properties actually improve anything
+    elRef.current.style.willChange = 'transform'
+    // @ts-expect-error
+    elRef.current.style.contain = 'size layout paint'
   }, [])
 
   useEffect(() => {
