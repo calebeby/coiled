@@ -173,8 +173,6 @@ export const Animated = <El extends keyof JSX.IntrinsicElements>({
 
     // TODO: see if these properties actually improve anything
     elRef.current.style.willChange = 'transform'
-    // @ts-expect-error
-    elRef.current.style.contain = 'size layout paint'
   }, [])
 
   useEffect(() => {
