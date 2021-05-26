@@ -1,4 +1,11 @@
-import { useEffect, useLayoutEffect, useRef } from 'preact/hooks'
+import { createContext } from 'preact'
+import {
+  useContext,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+} from 'preact/hooks'
 
 export interface Animator<State> {
   getInitialState(now: number, alpha: number, beta: number): State
@@ -15,6 +22,7 @@ type AnimatedProps<
 > = ElementProps<El> & {
   el: El
   animators: Animator<any>[]
+  animateId?: any
 }
 
 export type ODEParameters = [
@@ -38,7 +46,7 @@ export type ODEParameters = [
  * After the oscillations decrease to below this threshold,
  * stop the oscillations entirely. Units are the same as the positional units (usualy px)
  */
-const oscillationEndThreshold = 0.1
+const oscillationEndThreshold = 0.4
 
 /** To be called when the target changes (or may have changed) */
 export const computeODEParameters = (
@@ -100,14 +108,39 @@ export const computeVelocityAtTime = (
   )
 }
 
+const globalState = new Map<any, any[]>()
+
+// TODO: memory leak, never cleaned up
+const makeStateGetter = (state: Map<any, any[]>) => (
+  animateId: any,
+  numAnimators: number,
+) => {
+  return (
+    state.get(animateId) ||
+    state.set(animateId, new Array(numAnimators)).get(animateId)
+  )
+}
+
+const animateContext = createContext(makeStateGetter(globalState))
+
+export const AnimateParent = ({ children }: { children: any }) => {
+  const getter = useMemo(() => makeStateGetter(new Map<any, any[]>()), [])
+  return (
+    <animateContext.Provider value={getter}>{children}</animateContext.Provider>
+  )
+}
+
 export const Animated = <El extends keyof JSX.IntrinsicElements>({
   el,
   animators,
+  animateId,
   ...props
 }: AnimatedProps<El>) => {
   const elRef = useRef<HTMLElement>()
   const El = el as any
-  const animatorStates = useRef<any[]>(new Array(animators.length)).current
+  const symbol = useMemo(() => Symbol(), [])
+  const id = animateId === undefined ? symbol : animateId
+  const animatorStates = useContext(animateContext)(id, animators.length)!
 
   const b = 27.8
   const m = 1
@@ -136,11 +169,7 @@ export const Animated = <El extends keyof JSX.IntrinsicElements>({
   })
 
   useLayoutEffect(() => {
-    elRef.current.style.transform = `translate(var(--translate-x), var(--translate-y)) scale(var(--scale-x), var(--scale-y))`
-    elRef.current.style.setProperty('--translate-x', '0')
-    elRef.current.style.setProperty('--translate-y', '0')
-    elRef.current.style.setProperty('--scale-x', '1')
-    elRef.current.style.setProperty('--scale-y', '1')
+    elRef.current.style.transform = `translate(var(--translate-x, 0), var(--translate-y, 0)) scale(var(--scale-x, 1), var(--scale-y, 1))`
   }, [])
 
   useEffect(() => {

@@ -56,3 +56,40 @@ h3 {
   color: white;
   overflow: hidden;
 }
+
+.card-example {
+  background: #673ab7;
+  overflow: hidden;
+}
+
+.card-example .card-list {
+  display: grid;
+  gap: 10px;
+  padding: 10px;
+  grid-auto-columns: 1fr;
+  grid-template-rows: auto auto;
+  grid-auto-flow: column;
+  align-items: stretch;
+}
+
+.card {
+  background: #7e57c2;
+  border-radius: 8px;
+  padding: 20px;
+  font-family: sans-serif;
+  cursor: pointer;
+  border: none;
+  box-shadow: #0000004a 1px 1px 5px 1px;
+}
+
+.card.expanded {
+  margin: 10px;
+  width: calc(100% - 20px);
+  min-height: 20rem;
+}
+
+.card.placeholder {
+  background: #0000001f;
+  box-shadow: none;
+  filter: blur(2px);
+}

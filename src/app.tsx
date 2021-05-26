@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'preact/hooks'
-import { Animated } from './animated'
+import { Animated, AnimateParent } from './animated'
 import { positionAnimator, sizeAnimator } from './position-and-size-animator'
 
 const useSpacebar = (cb: () => void) => {
@@ -90,6 +90,86 @@ const WidthExample = () => {
   )
 }
 
+interface Card {
+  title: string
+  content: string
+}
+
+interface CardProps extends Card {
+  onClick: () => void
+  expanded: boolean
+  animateId?: any
+}
+
+const Card = ({ title, content, onClick, expanded, animateId }: CardProps) => {
+  return (
+    <Animated
+      el={expanded ? 'div' : 'button'}
+      animators={[positionAnimator, sizeAnimator]}
+      class={`card ${expanded ? 'expanded' : ''}`}
+      onClick={onClick}
+      animateId={animateId}
+    >
+      <h1>{title}</h1>
+      {expanded && <p>{content}</p>}
+    </Animated>
+  )
+}
+
+const cards: Card[] = [
+  { title: 'Hello', content: 'This is some text for hello' },
+  { title: 'Goodbye', content: 'This is some text for goodbye' },
+  { title: '1234', content: 'no text here' },
+  { title: 'hi', content: 'who said what?' },
+  { title: 'hmmmm', content: 'what is a day' },
+]
+
+const CardExpandExample = () => {
+  const [expandedCard, setExpandedCard] = useState<Card | null>(null)
+  return (
+    <AnimateParent>
+      <div class="example card-example">
+        <div class="card-list">
+          {cards.map((card) =>
+            expandedCard === card ? (
+              <div class="card placeholder" />
+            ) : (
+              <Card
+                expanded={false}
+                key={card.title}
+                title={card.title}
+                content={card.content}
+                onClick={() => setExpandedCard(card)}
+                // onClick={() => (
+                //   setExpandedCard((s) => (s === null ? false : null)),
+                //   cards.reverse()
+                // )}
+                animateId={card}
+              />
+            ),
+          )}
+        </div>
+        {expandedCard && (
+          <Card
+            expanded
+            title={expandedCard.title}
+            content={expandedCard.content}
+            animateId={expandedCard}
+            onClick={() => setExpandedCard(null)}
+            key={expandedCard.title}
+          />
+        )}
+      </div>
+    </AnimateParent>
+  )
+}
+
 export const App = () => {
-  return ([<WidthExample />, <PositionExample />] as any) as JSX.Element
+  return (
+    <>
+      <WidthExample />,
+      <PositionExample />,
+      <CardExpandExample />
+    </>
+  )
 }
