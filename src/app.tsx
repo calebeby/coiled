@@ -2,11 +2,11 @@ import { useEffect, useState } from 'preact/hooks'
 import { Animated, AnimateParent } from './animated'
 import { positionAnimator, sizeAnimator } from './position-and-size-animator'
 
-const useSpacebar = (cb: () => void) => {
+const useKey = (expectedKey: string, cb: () => void) => {
   useEffect(() => {
     const listener = (event: KeyboardEvent) => {
       const { key } = event
-      if (key === ' ') {
+      if (key === expectedKey) {
         event.preventDefault()
         cb()
       }
@@ -21,7 +21,7 @@ const PositionExample = () => {
   const [items, setItems] = useState([1, 2, 3, 4])
   // const [items, setItems] = useState([1, 2])
 
-  useSpacebar(() => {
+  useKey(' ', () => {
     // setItems((i) => i.slice().reverse())
     setItems((i) => {
       i.unshift(i.pop()!)
@@ -60,7 +60,7 @@ const PositionExample = () => {
 const WidthExample = () => {
   const [position, setPosition] = useState(false)
 
-  useSpacebar(() => {
+  useKey(() => {
     setPosition((p) => !p)
   })
 
@@ -140,10 +140,6 @@ const CardExpandExample = () => {
                 title={card.title}
                 content={card.content}
                 onClick={() => setExpandedCard(card)}
-                // onClick={() => (
-                //   setExpandedCard((s) => (s === null ? false : null)),
-                //   cards.reverse()
-                // )}
                 animateId={card}
               />
             ),
@@ -164,12 +160,30 @@ const CardExpandExample = () => {
   )
 }
 
+const TransformCompositionExample = () => {
+  const [toggle, setToggle] = useState(false)
+  useKey('k', () => setToggle((t) => !t))
+  return (
+    <div class="example transformation-composition-example">
+      <Animated
+        el="div"
+        animators={[positionAnimator, sizeAnimator]}
+        class={`box ${toggle ? 'toggled' : ''}`}
+        onClick={() => setToggle((t) => !t)}
+      >
+        Contents
+      </Animated>
+    </div>
+  )
+}
+
 export const App = () => {
   return (
     <>
       <WidthExample />,
       <PositionExample />,
       <CardExpandExample />
+      <TransformCompositionExample />
     </>
   )
 }

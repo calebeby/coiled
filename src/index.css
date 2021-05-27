@@ -93,3 +93,20 @@ h3 {
   box-shadow: none;
   filter: blur(2px);
 }
+
+.transformation-composition-example {
+  background: #81d4fa;
+  position: relative;
+}
+
+.transformation-composition-example .box {
+  background: #03a9f4;
+  width: 80px;
+  height: 80px;
+  transform: translateX(900px);
+}
+
+.transformation-composition-example .box.toggled {
+  position: absolute;
+  right: 0;
+}
