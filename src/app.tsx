@@ -167,7 +167,7 @@ const TransformCompositionExample = () => {
     <div class="example transformation-composition-example">
       <Animated
         el="div"
-        animators={[positionAnimator, sizeAnimator]}
+        animators={[]}
         class={`box ${toggle ? 'toggled' : ''}`}
         onClick={() => setToggle((t) => !t)}
       >
@@ -180,9 +180,9 @@ const TransformCompositionExample = () => {
 export const App = () => {
   return (
     <>
-      <WidthExample />,
+      {/*<WidthExample />,
       <PositionExample />,
-      <CardExpandExample />
+      <CardExpandExample />*/}
       <TransformCompositionExample />
     </>
   )

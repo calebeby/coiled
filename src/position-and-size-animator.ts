@@ -36,9 +36,6 @@ export const sizeAnimator: Animator<SizeAnimatorState> = {
     const currentHeight =
       computePositionAtTime(now, state.height) + targetHeight
 
-    // el.style.transform = `
-    //   scale(${currentWidth / targetWidth},${currentHeight / targetHeight})`
-
     el.style.setProperty('--scale-x', String(currentWidth / targetWidth))
     el.style.setProperty('--scale-y', String(currentHeight / targetHeight))
 

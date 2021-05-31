@@ -103,7 +103,7 @@ h3 {
   background: #03a9f4;
   width: 80px;
   height: 80px;
-  transform: translateX(900px);
+  transform: translate(200px, 50px) rotate(30deg);
 }
 
 .transformation-composition-example .box.toggled {
